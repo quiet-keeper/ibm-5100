@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IBM 5100 - PALM MICROCODE MONITOR</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            background: #0a0a0a;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: 'Courier New', 'VT323', monospace;
+            padding: 20px;
+        }
+        .terminal {
+            background: #0f2b0f;
+            border: 4px solid #2a4a2a;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.2), inset 0 0 10px rgba(0, 255, 0, 0.1);
+            max-width: 900px;
+            width: 100%;
+            padding: 20px;
+        }
+        .screen {
+            background: #0a1f0a;
+            color: #33ff33;
+            font-family: 'Courier New', 'VT323', monospace;
+            font-size: 16px;
+            line-height: 1.5;
+            padding: 20px;
+            border-radius: 4px;
+            text-shadow: 0 0 3px #33ff33;
+            box-shadow: inset 0 0 15px rgba(0, 255, 0, 0.1);
+        }
+        .header {
+            border-bottom: 1px solid #33ff33;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            font-weight: bold;
+            white-space: pre-wrap;
+            font-size: 14px;
+        }
+        .output {
+            margin-bottom: 20px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            min-height: 200px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .input-line {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+            border-top: 1px solid #33ff33;
+            padding-top: 15px;
+        }
+        .input-line input {
+            flex: 1;
+            background: #0a1f0a;
+            border: 1px solid #33ff33;
+            color: #33ff33;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            padding: 8px 12px;
+            outline: none;
+        }
+        .input-line button {
+            background: #0a1f0a;
+            border: 1px solid #33ff33;
+            color: #33ff33;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            padding: 8px 16px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .input-line button:hover {
+            background: #33ff33;
+            color: #0a1f0a;
+            box-shadow: 0 0 8px #33ff33;
+        }
+        .mode-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        .mode-buttons button {
+            background: #0a1f0a;
+            border: 1px solid #33ff33;
+            color: #33ff33;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            padding: 5px 12px;
+            cursor: pointer;
+        }
+        .mode-buttons button.active {
+            background: #33ff33;
+            color: #0a1f0a;
+        }
+        .status {
+            font-size: 12px;
+            margin-top: 10px;
+            color: #66ff66;
+            border-top: 1px solid #33ff33;
+            padding-top: 8px;
+        }
+        ::-webkit-scrollbar {
+            width: 8px;
+            background: #0a1f0a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #33ff33;
+            border-radius: 4px;
+        }
+        .hex-mode-badge {
+            background: #0a1f0a;
+            border: 1px solid #33ff33;
+            color: #33ff33;
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 10px;
+            cursor: pointer;
+        }
+        .hex-mode-badge.active {
+            background: #33ff33;
+            color: #0a1f0a;
+        }
+    </style>
+</head>
+<body>
+<div class="terminal">
+    <div class="screen">
+        <div class="header">
+IBM 5100 PERSONAL COMPUTER - MODEL 5100
+PALM MICROCODE MONITOR 1.0
+BASIC/APL HYBRID FIRMWARE © IBM 1975
+
+MEMORY SIZE: 64,000 BYTES    TAPE: DC300
+TERMINAL: 16x64   PHOSPHOR: P1 (GREEN)
+
+SELF TEST ................. OK
+ROM CHECK ................. OK
+TAPE DRIVE ................ OK
+        </div>
+        <div class="mode-buttons">
+            <button id="btnApl" class="active">APL MODE</button>
+            <button id="btnBasic">BASIC MODE</button>
+            <span class="hex-mode-badge" id="hexModeToggle">HEX MODE: OFF</span>
+        </div>
+        <div class="output" id="output">
+            > READY.<br>
+            > Type HELP for commands.<br>
+        </div>
+        <div class="input-line">
+            <input type="text" id="commandInput" placeholder="> " autofocus>
+            <button id="executeBtn">ENTER</button>
+        </div>
+        <div class="status" id="status">
+            MODE: APL | KEY: 42 (XOR) | FIRMWARE: HYBRID
+        </div>
+    </div>
+</div>
+
+<script>
+    // ==============================================
+    //  IBN 5100 TERMINAL - С HEX-РЕЖИМОМ И RESET KEY
+    //  EL PSY KONGROO
+    // ==============================================
+    
+    let XOR_KEY = 42;
+    const DEFAULT_KEY = 42;     // Значение по умолчанию для сброса
+    let currentMode = "APL";
+    let hexMode = false;
+    let outputHistory = [];
+
+    const outputDiv = document.getElementById("output");
+    const commandInput = document.getElementById("commandInput");
+    const executeBtn = document.getElementById("executeBtn");
+    const btnApl = document.getElementById("btnApl");
+    const btnBasic = document.getElementById("btnBasic");
+    const statusSpan = document.getElementById("status");
+    const hexModeToggle = document.getElementById("hexModeToggle");
+
+    // XOR функция
+    function xorCrypt(text, key) {
+        let result = "";
+        for (let i = 0; i < text.length; i++) {
+            let code = text.charCodeAt(i);
+            let newCode = code ^ key;
+            result += String.fromCharCode(newCode);
+        }
+        return result;
+    }
+
+    // Преобразование строки в HEX
+    function toHexString(str) {
+        let hex = "";
+        for (let i = 0; i < str.length; i++) {
+            let code = str.charCodeAt(i);
+            let hexCode = code.toString(16).toUpperCase().padStart(2, '0');
+            hex += hexCode + " ";
+        }
+        return hex.trim();
+    }
+
+    // Извлечение из HEX строки
+    function fromHexString(hexStr) {
+        const bytes = hexStr.trim().split(/\s+/);
+        let result = "";
+        for (let byte of bytes) {
+            let code = parseInt(byte, 16);
+            if (!isNaN(code) && code >= 0 && code <= 255) {
+                result += String.fromCharCode(code);
+            } else {
+                return null;
+            }
+        }
+        return result;
+    }
+
+    function extractQuotedString(input) {
+        let match = input.match(/'([^']*)'/);
+        if (match) return match[1];
+        match = input.match(/"([^"]*)"/);
+        if (match) return match[1];
+        return null;
+    }
+
+    function escapeHtml(str) {
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    function addOutput(text, isCommand = false) {
+        const line = document.createElement("div");
+        const safeText = escapeHtml(text);
+        if (isCommand) {
+            line.innerHTML = `> ${safeText}`;
+        } else {
+            line.innerHTML = safeText;
+        }
+        outputDiv.appendChild(line);
+        outputDiv.scrollTop = outputDiv.scrollHeight;
+        outputHistory.push(text);
+    }
+
+    function updateStatus() {
+        statusSpan.innerText = `MODE: ${currentMode} | KEY: ${XOR_KEY} (XOR) | FIRMWARE: HYBRID`;
+    }
+
+    function updateHexModeButton() {
+        hexModeToggle.innerText = `HEX MODE: ${hexMode ? "ON" : "OFF"}`;
+        hexModeToggle.classList.toggle("active", hexMode);
+    }
+
+    function handleCrypt(textToCrypt) {
+        let encrypted = xorCrypt(textToCrypt, XOR_KEY);
+        
+        if (hexMode) {
+            addOutput(`[HEX] ${toHexString(encrypted)}`);
+            addOutput(`(Original text was: "${textToCrypt}")`);
+        } else {
+            let hasNonPrintable = false;
+            for (let i = 0; i < encrypted.length; i++) {
+                let code = encrypted.charCodeAt(i);
+                if (code < 32 || code > 126) {
+                    hasNonPrintable = true;
+                    break;
+                }
+            }
+            addOutput(encrypted);
+            if (hasNonPrintable && !hexMode) {
+                addOutput("[NOTE] Result contains non-printable chars. Use 'hex on' to see HEX view.");
+            }
+        }
+        return encrypted;
+    }
+
+    function processCommand(cmd) {
+        const trimmed = cmd.trim();
+        if (trimmed === "") return;
+
+        addOutput(trimmed, true);
+
+        // HELP (обновлён)
+        if (trimmed.toLowerCase() === "help") {
+            addOutput("Available commands:");
+            addOutput("  mode apl / mode basic      - Switch language mode");
+            addOutput("  crypt 'text' or \"text\"    - Encrypt with XOR key");
+            addOutput("  crypt hex <HEX>            - Decrypt HEX string");
+            addOutput("  key <number>               - Change XOR key (0-255)");
+            addOutput("  reset key                  - Reset XOR key to default (42)");
+            addOutput("  reset key to <N>           - Reset XOR key to N (0-255)");
+            addOutput("  hex on / hex off           - Toggle HEX output mode");
+            addOutput("  clear                      - Clear screen");
+            addOutput("  info                       - Show system info");
+            addOutput("  time travel / okabe        - Easter eggs");
+            addOutput("");
+            addOutput("Examples:");
+            addOutput("  crypt 'hello'");
+            addOutput("  crypt hex \"48 65 6C 6C 6F\"");
+            addOutput("  hex on");
+            addOutput("  reset key");
+            addOutput("  reset key to 100");
+            return;
+        }
+
+        // HEX MODE
+        if (trimmed.toLowerCase() === "hex on") {
+            hexMode = true;
+            updateHexModeButton();
+            addOutput("HEX mode enabled. Encrypted output will be shown as hexadecimal.");
+            return;
+        }
+        if (trimmed.toLowerCase() === "hex off") {
+            hexMode = false;
+            updateHexModeButton();
+            addOutput("HEX mode disabled.");
+            return;
+        }
+
+        // CLEAR
+        if (trimmed.toLowerCase() === "clear") {
+            outputDiv.innerHTML = "";
+            addOutput("READY.");
+            return;
+        }
+
+        // INFO
+        if (trimmed.toLowerCase() === "info") {
+            addOutput("IBM 5100 PALM MICROCODE MONITOR 1.1");
+            addOutput("BASIC/APL HYBRID FIRMWARE");
+            addOutput("MEMORY: 64K BYTES");
+            addOutput("XOR KEY: " + XOR_KEY + " (default: " + DEFAULT_KEY + ")");
+            addOutput("HEX MODE: " + (hexMode ? "ON" : "OFF"));
+            addOutput("CRYPTO ENGINE: ACTIVE (Unicode-safe)");
+            return;
+        }
+
+        // MODE APL/BASIC
+        if (trimmed.toLowerCase() === "mode apl") {
+            currentMode = "APL";
+            btnApl.classList.add("active");
+            btnBasic.classList.remove("active");
+            updateStatus();
+            addOutput("Switched to APL mode.");
+            return;
+        }
+        if (trimmed.toLowerCase() === "mode basic") {
+            currentMode = "BASIC";
+            btnBasic.classList.add("active");
+            btnApl.classList.remove("active");
+            updateStatus();
+            addOutput("Switched to BASIC mode.");
+            return;
+        }
+
+        // CHANGE KEY
+        if (trimmed.toLowerCase().startsWith("key ")) {
+            const parts = trimmed.split(" ");
+            const newKey = parseInt(parts[1], 10);
+            if (!isNaN(newKey) && newKey >= 0 && newKey <= 255) {
+                XOR_KEY = newKey;
+                updateStatus();
+                addOutput(`OK. XOR key changed to ${XOR_KEY}.`);
+            } else {
+                addOutput("ERROR: Invalid key. Use a number between 0 and 255.");
+            }
+            return;
+        }
+
+        // НОВАЯ КОМАНДА: RESET KEY
+        if (trimmed.toLowerCase() === "reset key") {
+            XOR_KEY = DEFAULT_KEY;
+            updateStatus();
+            addOutput(`OK. XOR key reset to default (${DEFAULT_KEY}).`);
+            return;
+        }
+
+        // НОВАЯ КОМАНДА: RESET KEY TO <N>
+        if (trimmed.toLowerCase().startsWith("reset key to ")) {
+            const parts = trimmed.split(" ");
+            const newKey = parseInt(parts[3], 10);  // "reset key to 100" -> parts[3] = "100"
+            if (!isNaN(newKey) && newKey >= 0 && newKey <= 255) {
+                XOR_KEY = newKey;
+                updateStatus();
+                addOutput(`OK. XOR key reset to ${XOR_KEY}.`);
+            } else {
+                addOutput("ERROR: Invalid key. Use a number between 0 and 255.");
+            }
+            return;
+        }
+
+        // CRYPT hex "..."
+        if (trimmed.toLowerCase().startsWith("crypt hex")) {
+            let rest = trimmed.substring(9).trim();
+            let hexString = extractQuotedString(rest);
+            if (!hexString) {
+                hexString = rest;
+            }
+            let decrypted = fromHexString(hexString);
+            if (decrypted !== null) {
+                let result = xorCrypt(decrypted, XOR_KEY);
+                addOutput(result);
+            } else {
+                addOutput("ERROR: Invalid HEX string. Use format: crypt hex \"48 65 6C 6C 6F\"");
+            }
+            return;
+        }
+
+        // CRYPT command
+        if (trimmed.toLowerCase().startsWith("crypt ")) {
+            let text = extractQuotedString(trimmed);
+            if (text !== null) {
+                handleCrypt(text);
+            } else {
+                let possibleHex = trimmed.substring(6).trim();
+                let hexDecoded = fromHexString(possibleHex);
+                if (hexDecoded !== null && possibleHex.length > 3) {
+                    let result = xorCrypt(hexDecoded, XOR_KEY);
+                    addOutput(result);
+                } else {
+                    addOutput("SYNTAX ERROR: Use crypt 'text' or crypt hex \"HEX\"");
+                }
+            }
+            return;
+        }
+
+        // EASTER EGGS
+        if (trimmed.toLowerCase() === "time travel") {
+            addOutput("EL PSY KONGROO. ✨");
+            addOutput("The world line shifts... but the key remains 42 in heart.");
+            return;
+        }
+        if (trimmed.toLowerCase() === "okabe") {
+            addOutput("Hououin Kyouma: 'I am the mad scientist, Hououin Kyouma!'");
+            addOutput("The IBM 5100 hums with the voice of the future.");
+            return;
+        }
+
+        // BASIC симуляция
+        if (currentMode === "BASIC") {
+            if (trimmed.toLowerCase() === "run") {
+                addOutput("BASIC PROGRAM RUNNING...");
+                addOutput("READY.");
+            } else if (trimmed.toLowerCase() === "list") {
+                addOutput("READY.");
+            } else if (trimmed.toLowerCase() === "new") {
+                addOutput("CLEARED");
+            } else if (trimmed.match(/^\d+\s+/)) {
+                addOutput("OK");
+            } else {
+                addOutput("SYNTAX ERROR");
+            }
+            return;
+        }
+
+        // COMMAND NOT FOUND
+        if (currentMode === "APL") {
+            addOutput("SYNTAX ERROR: Unknown command. Type HELP for list.");
+        } else {
+            addOutput("SYNTAX ERROR");
+        }
+    }
+
+    function executeCommand() {
+        const cmd = commandInput.value;
+        if (cmd.trim() !== "") {
+            processCommand(cmd);
+        }
+        commandInput.value = "";
+        commandInput.focus();
+    }
+
+    executeBtn.addEventListener("click", executeCommand);
+    commandInput.addEventListener("keypress", function(e) {
+        if (e.key === "Enter") {
+            executeCommand();
+        }
+    });
+
+    btnApl.addEventListener("click", () => {
+        processCommand("mode apl");
+    });
+    btnBasic.addEventListener("click", () => {
+        processCommand("mode basic");
+    });
+    hexModeToggle.addEventListener("click", () => {
+        hexMode = !hexMode;
+        updateHexModeButton();
+        addOutput(`HEX mode ${hexMode ? "enabled" : "disabled"}.`);
+    });
+
+    updateHexModeButton();
+    updateStatus();
+    addOutput("IBM 5100 ONLINE. XOR CRYPTO ENGINE ACTIVE.");
+    addOutput(`CURRENT KEY: ${XOR_KEY}. Type HELP for commands.`);
+    addOutput(`TIP: Use "hex on" to see encrypted data as HEX.`);
+    addOutput(`TIP: Use "reset key" to reset to ${DEFAULT_KEY}.`);
+    commandInput.focus();
+</script>
+</body>
+</html>
