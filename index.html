@@ -174,7 +174,7 @@ TAPE DRIVE ................ OK
 
 <script>
     // ==============================================
-    //  IBM 5100 TERMINAL - С HEX-РЕЖИМОМ И RESET KEY
+    //  IBN 5100 TERMINAL - С HEX-РЕЖИМОМ И RESET KEY
     //  EL PSY KONGROO
     // ==============================================
     
@@ -192,7 +192,6 @@ TAPE DRIVE ................ OK
     const statusSpan = document.getElementById("status");
     const hexModeToggle = document.getElementById("hexModeToggle");
 
-    // XOR функция
     function xorCrypt(text, key) {
         let result = "";
         for (let i = 0; i < text.length; i++) {
@@ -203,7 +202,6 @@ TAPE DRIVE ................ OK
         return result;
     }
 
-    // Преобразование строки в HEX
     function toHexString(str) {
         let hex = "";
         for (let i = 0; i < str.length; i++) {
@@ -214,7 +212,7 @@ TAPE DRIVE ................ OK
         return hex.trim();
     }
 
-    // Извлечение из HEX строки
+    // === НОВАЯ ФУНКЦИЯ: РАСШИФРОВКА HEX СТРОКИ ===
     function fromHexString(hexStr) {
         const bytes = hexStr.trim().split(/\s+/);
         let result = "";
@@ -223,7 +221,7 @@ TAPE DRIVE ................ OK
             if (!isNaN(code) && code >= 0 && code <= 255) {
                 result += String.fromCharCode(code);
             } else {
-                return null;
+                return null; // невалидный HEX
             }
         }
         return result;
@@ -406,7 +404,7 @@ TAPE DRIVE ................ OK
             return;
         }
 
-        // CRYPT hex "..."
+        // === НОВАЯ КОМАНДА: CRYPT hex <HEX> ===
         if (trimmed.toLowerCase().startsWith("crypt hex")) {
             let rest = trimmed.substring(9).trim();
             let hexString = extractQuotedString(rest);
