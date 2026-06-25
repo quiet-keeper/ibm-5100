@@ -133,7 +133,7 @@ TAPE DRIVE ................ OK
         <br>
         <span class="prompt">> TIP: Use "hex on" to see encrypted data as HEX.</span>
         <br>
-        <span class="prompt">> TIP: Use "hex [bytes]" or "hex decode [bytes]" to decode HEX to text.</span>
+        <span class="prompt">> TIP: Use "hex decode [bytes]" to decode HEX to text.</span>
         <br>
         <span class="prompt">> TIP: Use "reset key" to reset to 42.</span>
         <br>
@@ -212,8 +212,7 @@ TAPE DRIVE ................ OK
                 appendOutput('set key [number]      - set XOR key (1-255)');
                 appendOutput('reset key             - reset key to 42');
                 appendOutput('hex on/off            - show/hide hex output');
-                appendOutput('hex [bytes]           - decode HEX to text');
-                appendOutput('hex decode [bytes]    - decode HEX to text (alias)');
+                appendOutput('hex decode [bytes]    - decode HEX to text');
                 appendOutput('encrypt [text]        - encrypt text with current key');
                 appendOutput('decrypt [text]        - decrypt text with current key');
                 appendOutput('clear                 - clear screen');
@@ -267,9 +266,8 @@ TAPE DRIVE ................ OK
                         }
                     }
                 } else {
-                    // Если вторая часть — decode, то декодируем
-                    const startIndex = parts[1].toLowerCase() === 'decode' ? 2 : 1;
-                    const hexStr = parts.slice(startIndex).join(' ');
+                    // несколько байт
+                    const hexStr = parts.slice(1).join(' ');
                     const decoded = hexDecode(hexStr);
                     if (decoded === null) {
                         appendOutput('ERROR: Invalid HEX format. Use: A1 B2 C3 ...', 'error');
@@ -328,7 +326,7 @@ TAPE DRIVE ................ OK
                 break;
 
             default:
-                
+                // Пытаемся расшифровать как XOR
                 try {
                     const result = xorEncryptDecrypt(trimmed, key);
                     if (hexMode) {
