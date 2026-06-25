@@ -1,424 +1,263 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
-    <title>IBM 5100 — PALM MICROCODE MONITOR</title>
+    <title>IBM 5100 - PALM MICROCODE MONITOR</title>
     <style>
-        * {
+        body {
+            background: #000000;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            font-size: 18px;
+            padding: 20px;
             margin: 0;
-            padding: 0;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            border: 2px solid #00ff00;
+            padding: 40px;
+            max-width: 900px;
+            width: 100%;
+            background: #0a0a0a;
+            box-shadow: 0 0 10px #00ff00;
+            position: relative;
             box-sizing: border-box;
         }
 
-        body {
-            background: #0a0a0a;
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-family: 'Courier New', 'VT323', monospace;
-            padding: 20px;
-        }
-
-        .terminal {
-            background: #0f2b0f;
-            border: 4px solid #2a4a2a;
-            border-radius: 8px;
-            box-shadow: 0 0 20px rgba(0, 255, 0, 0.2), inset 0 0 10px rgba(0, 255, 0, 0.1);
-            max-width: 900px;
-            width: 100%;
-            padding: 20px;
-        }
-
-        .screen {
-            background: #0a1f0a;
-            color: #33ff33;
-            font-family: 'Courier New', 'VT323', monospace;
-            font-size: 16px;
-            line-height: 1.5;
-            padding: 20px;
-            border-radius: 4px;
-            text-shadow: 0 0 3px #33ff33;
-            box-shadow: inset 0 0 15px rgba(0, 255, 0, 0.1);
-        }
-
         .header {
-            border-bottom: 1px solid #33ff33;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
+            color: #00ff00;
             font-weight: bold;
-            white-space: pre-wrap;
-            font-size: 14px;
+            text-align: center;
+            text-transform: uppercase;
+            font-size: 22px;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #00ff00;
+            padding-bottom: 10px;
         }
 
-        .output {
+        .content {
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-wrap: break-word;
             margin-bottom: 20px;
-            white-space: pre-wrap;
-            word-break: break-all;
-            min-height: 200px;
-            max-height: 400px;
-            overflow-y: auto;
         }
 
-        .output .prompt {
-            color: #33ff33;
+        .prompt {
+            display: flex;
+            align-items: center;
+            flex-wrap: wrap;
         }
 
-        .output .error {
-            color: #ff6666;
-        }
-
-        .output .success {
-            color: #66ff99;
+        .prompt-symbol {
+            color: #00ff00;
+            margin-right: 8px;
         }
 
         .input-line {
             display: flex;
+            align-items: center;
             flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 10px;
-            border-top: 1px solid #33ff33;
-            padding-top: 15px;
+            margin-top: 5px;
         }
 
         .input-line input {
-            flex: 1;
-            background: #0a1f0a;
-            border: 1px solid #33ff33;
-            color: #33ff33;
+            background: transparent;
+            border: 1px solid #00ff00;
+            color: #00ff00;
             font-family: 'Courier New', monospace;
-            font-size: 16px;
-            padding: 8px 12px;
+            font-size: 18px;
+            padding: 5px 10px;
             outline: none;
+            flex: 1;
+            min-width: 150px;
+            margin-right: 10px;
+            box-sizing: border-box;
         }
 
         .input-line button {
-            background: #0a1f0a;
-            border: 1px solid #33ff33;
-            color: #33ff33;
+            background: transparent;
+            border: 1px solid #00ff00;
+            color: #00ff00;
             font-family: 'Courier New', monospace;
             font-size: 16px;
-            padding: 8px 16px;
+            padding: 5px 15px;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: 0.2s;
         }
 
         .input-line button:hover {
-            background: #33ff33;
-            color: #0a1f0a;
-            box-shadow: 0 0 8px #33ff33;
+            background: #00ff00;
+            color: #000000;
         }
 
-        .status {
-            font-size: 12px;
-            margin-top: 10px;
-            color: #66ff66;
-            border-top: 1px solid #33ff33;
-            padding-top: 8px;
+        .output-box {
+            margin-top: 15px;
+            padding: 10px;
+            border: 1px dashed #00ff00;
+            background: #0f1f0f;
+            min-height: 30px;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+            color: #00ff00;
         }
 
-        ::-webkit-scrollbar {
-            width: 8px;
-            background: #0a1f0a;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #33ff33;
-            border-radius: 4px;
-        }
-
-        .mode-buttons {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-
-        .mode-buttons button {
-            background: #0a1f0a;
-            border: 1px solid #33ff33;
-            color: #33ff33;
-            font-family: 'Courier New', monospace;
+        .footer {
+            margin-top: 20px;
             font-size: 14px;
-            padding: 5px 12px;
-            cursor: pointer;
+            color: #00aa00;
+            border-top: 1px solid #00aa00;
+            padding-top: 10px;
+            text-align: center;
         }
 
-        .mode-buttons button.active {
-            background: #33ff33;
-            color: #0a1f0a;
+        /* Оригинальный стиль не трогаем */
+        .help-line {
+            color: #00aa00;
+            font-size: 14px;
+        }
+
+        .status-line {
+            color: #00aa00;
+            font-size: 14px;
+        }
+
+        .separator {
+            margin: 15px 0;
+            border-top: 1px dashed #00aa00;
         }
     </style>
 </head>
 <body>
-<div class="terminal">
-    <div class="screen">
-        <div class="header">
-IBM 5100 PERSONAL COMPUTER - MODEL 5100
-PALM MICROCODE MONITOR 1.0
-BASIC/APL HYBRID FIRMWARE © IBM 1975
+<div class="container">
+    <div class="header">IBM 5100 - PALM MICROCODE MONITOR</div>
+    <div class="content">
+        IBM 5100 PERSONAL COMPUTER - MODEL 5100
+        PALM MICROCODE MONITOR 1.0
+        BASIC/APL HYBRID FIRMWARE © IBM 1975
+        MEMORY SIZE: 64,000 BYTES
+        TAPE: DC300
+        TERMINAL: 16x64
+        PHOSPHOR: P1 (GREEN)
 
-MEMORY SIZE: 64,000 BYTES    TAPE: DC300
-TERMINAL: 16x64   PHOSPHOR: P1 (GREEN)
+        SELF TEST ................. OK
+        ROM CHECK ................. OK
+        TAPE DRIVE ................ OK
 
-SELF TEST ................. OK
-ROM CHECK ................. OK
-TAPE DRIVE ................ OK
-        </div>
+        > READY.
 
-        <div class="output" id="output">
-            <span class="prompt">> READY.</span><br>
-            <span class="prompt">> Type HELP for commands.</span><br>
-            <span class="prompt">> IBM 5100 ONLINE. XOR CRYPTO ENGINE ACTIVE.</span><br>
-            <span class="prompt">> CURRENT KEY: 42. Type HELP for commands.</span><br>
-            <span class="prompt">> TIP: Use "hex on" to see encrypted data as HEX.</span><br>
-            <span class="prompt">> TIP: Use "hex decode [bytes]" to decode HEX to text.</span><br>
-            <span class="prompt">> TIP: Use "reset key" to reset to 42.</span><br>
-            <span class="prompt">> MODE: APL | KEY: 42 (XOR) | FIRMWARE: HYBRID</span><br>
-        </div>
+        > Type HELP for commands.
 
-        <div class="input-line">
-            <input type="text" id="cmdInput" placeholder="> " autofocus>
-            <button id="executeBtn">ENTER</button>
-        </div>
+        IBM 5100 ONLINE. XOR CRYPTO ENGINE ACTIVE.
 
-        <div class="status" id="status">
-            MODE: APL | KEY: 42 (XOR) | FIRMWARE: HYBRID
-        </div>
+        CURRENT KEY: 42. Type HELP for commands.
+
+        TIP: Use "hex on" to see encrypted data as HEX.
+
+        TIP: Use "reset key" to reset to 42.
+
+        MODE: APL | KEY: 42 (XOR) | FIRMWARE: HYBRID
+    </div>
+
+    <div class="separator"></div>
+
+    <div class="prompt">
+        <span class="prompt-symbol">&gt;</span>
+        <span>XOR DECRYPT</span>
+    </div>
+    <div class="input-line">
+        <input type="text" id="keyInput" placeholder="ENTER KEY (e.g. 42)">
+        <button id="decryptBtn">DECRYPT</button>
+    </div>
+
+    <div class="separator"></div>
+
+    <div class="prompt">
+        <span class="prompt-symbol">&gt;</span>
+        <span>HEX DECODE</span>
+    </div>
+    <div class="input-line">
+        <input type="text" id="hexInput" placeholder="ENTER HEX (e.g. 48 65 6C 6C 6F)">
+        <button id="hexBtn">HEX → TEXT</button>
+    </div>
+
+    <div id="output" class="output-box">OUTPUT WILL APPEAR HERE</div>
+
+    <div class="footer">
+        <span class="status-line">SYSTEM ACTIVE // AWAITING COMMANDS</span>
     </div>
 </div>
 
 <script>
-    const output = document.getElementById('output');
-    const cmdInput = document.getElementById('cmdInput');
-    const executeBtn = document.getElementById('executeBtn');
-    const statusSpan = document.getElementById('status');
+    const KEY_DEFAULT = 42;
 
-    let key = 42;
-    let hexMode = false;
-    let history = [];
-    let historyIndex = -1;
+    // --- XOR DECRYPT ---
+    document.getElementById('decryptBtn').addEventListener('click', function () {
+        const keyInput = document.getElementById('keyInput').value.trim();
+        const output = document.getElementById('output');
 
-    function updateStatus() {
-        statusSpan.innerText = `MODE: APL | KEY: ${key} (XOR) | FIRMWARE: HYBRID`;
-    }
-
-    function appendOutput(text, className = '') {
-        const line = document.createElement('div');
-        if (className) {
-            line.className = className;
+        let numericKey = parseInt(keyInput, 10);
+        if (isNaN(numericKey)) {
+            output.innerHTML = 'ERROR: INVALID KEY. USE NUMBERS.';
+            return;
         }
-        line.textContent = text;
-        output.appendChild(line);
-        output.scrollTop = output.scrollHeight;
-    }
 
-    function xorEncryptDecrypt(text, key) {
+        // Пример зашифрованных данных в HEX (для демонстрации)
+        const encryptedHex = "1B 1A 04 0F 00 0B 1D 00 06 16 08 04 00 19 1D 04 0D 00 0F 08 18 00 13 1A 0F 0D 00 18 01 0F 04 1D 0A 0A 0D 19 06 07 05 00 1B 1A 04 0F 00 0B 1D 00 06 16 08 04 00 19 1D 04 0D 00 0F 08 18 00 13 1A 0F 0D 00 18 01 0F 04 1D 0A 0A 0D 19 06 07 05 00 2A";
+        const hexBytes = encryptedHex.split(' ').filter(b => b !== '');
+        const encryptedBytes = hexBytes.map(b => parseInt(b, 16));
+        const encryptedString = String.fromCharCode(...encryptedBytes);
+
+        let decrypted = '';
+        for (let i = 0; i < encryptedString.length; i++) {
+            const charCode = encryptedString.charCodeAt(i);
+            const keyCharCode = numericKey % 256;
+            decrypted += String.fromCharCode(charCode ^ keyCharCode);
+        }
+
+        output.innerHTML = 'DECRYPTED: ' + decrypted;
+    });
+
+    // --- HEX DECODE (новый функционал) ---
+    document.getElementById('hexBtn').addEventListener('click', function () {
+        const hexInput = document.getElementById('hexInput').value.trim();
+        const output = document.getElementById('output');
+
+        if (hexInput === '') {
+            output.innerHTML = 'ERROR: ENTER HEX BYTES (e.g. 48 65 6C 6C 6F)';
+            return;
+        }
+
+        const hexBytes = hexInput.split(/\s+/);
         let result = '';
-        for (let i = 0; i < text.length; i++) {
-            result += String.fromCharCode(text.charCodeAt(i) ^ key);
+
+        for (let i = 0; i < hexBytes.length; i++) {
+            const byte = parseInt(hexBytes[i], 16);
+            if (isNaN(byte)) {
+                output.innerHTML = 'ERROR: INVALID HEX FORMAT. USE SPACE-SEPARATED BYTES (e.g. 48 65 6C 6C 6F)';
+                return;
+            }
+            result += String.fromCharCode(byte);
         }
-        return result;
-    }
 
-    function hexEncode(text) {
-        return text.split('').map(c => {
-            const code = c.charCodeAt(0);
-            return code.toString(16).toUpperCase().padStart(2, '0');
-        }).join(' ');
-    }
+        output.innerHTML = 'TEXT: ' + result;
+    });
 
-    function hexDecode(hexStr) {
-        const bytes = hexStr.trim().split(/\s+/);
-        let result = '';
-        for (let b of bytes) {
-            const code = parseInt(b, 16);
-            if (isNaN(code)) return null;
-            result += String.fromCharCode(code);
-        }
-        return result;
-    }
-
-    function processCommand(cmd) {
-        const trimmed = cmd.trim();
-        if (!trimmed) return;
-
-        appendOutput(`> ${trimmed}`, 'prompt');
-
-        const parts = trimmed.split(' ');
-        const command = parts[0].toLowerCase();
-
-        switch (command) {
-            case 'help':
-                appendOutput('=== COMMANDS ===');
-                appendOutput('help                  - show this help');
-                appendOutput('set key [number]      - set XOR key (1-255)');
-                appendOutput('reset key             - reset key to 42');
-                appendOutput('hex on/off            - show/hide hex output');
-                appendOutput('hex decode [bytes]    - decode HEX to text');
-                appendOutput('encrypt [text]        - encrypt text with current key');
-                appendOutput('decrypt [text]        - decrypt text with current key');
-                appendOutput('clear                 - clear screen');
-                appendOutput('echo [text]           - print text');
-                appendOutput('status                - show current settings');
-                appendOutput('                      ');
-                appendOutput('TIP: You can also enter text directly');
-                appendOutput('     to encrypt/decrypt it.');
-                break;
-
-            case 'set':
-                if (parts.length < 3 || parts[1] !== 'key') {
-                    appendOutput('ERROR: Usage: set key [1-255]', 'error');
-                    return;
-                }
-                const newKey = parseInt(parts[2]);
-                if (isNaN(newKey) || newKey < 1 || newKey > 255) {
-                    appendOutput('ERROR: Key must be between 1 and 255', 'error');
-                    return;
-                }
-                key = newKey;
-                updateStatus();
-                appendOutput(`KEY set to ${key}`, 'success');
-                break;
-
-            case 'reset':
-                if (parts.length === 2 && parts[1] === 'key') {
-                    key = 42;
-                    updateStatus();
-                    appendOutput('KEY reset to 42', 'success');
-                } else {
-                    appendOutput('ERROR: Unknown command. Try "reset key"', 'error');
-                }
-                break;
-
-            case 'hex':
-                if (parts.length === 1) {
-                    appendOutput(`HEX mode: ${hexMode ? 'ON' : 'OFF'}`, 'success');
-                } else if (parts.length === 2 && parts[1] === 'on') {
-                    hexMode = true;
-                    appendOutput('HEX mode: ON (output as hexadecimal)', 'success');
-                } else if (parts.length === 2 && parts[1] === 'off') {
-                    hexMode = false;
-                    appendOutput('HEX mode: OFF (output as raw characters)', 'success');
-                } else if (parts[1] === 'decode') {
-                    const hexStr = parts.slice(2).join(' ');
-                    if (!hexStr) {
-                        appendOutput('ERROR: Usage: hex decode [bytes]', 'error');
-                        return;
-                    }
-                    const decoded = hexDecode(hexStr);
-                    if (decoded === null) {
-                        appendOutput('ERROR: Invalid HEX format. Use: A1 B2 C3 ...', 'error');
-                    } else {
-                        appendOutput(`DECODED: ${decoded}`, 'success');
-                    }
-                } else {
-                    const hexStr = parts.slice(1).join(' ');
-                    const decoded = hexDecode(hexStr);
-                    if (decoded === null) {
-                        appendOutput('ERROR: Invalid HEX format. Use: A1 B2 C3 ...', 'error');
-                    } else {
-                        appendOutput(`DECODED: ${decoded}`, 'success');
-                    }
-                }
-                break;
-
-            case 'encrypt':
-                if (parts.length < 2) {
-                    appendOutput('ERROR: Usage: encrypt [text]', 'error');
-                    return;
-                }
-                const plainText = parts.slice(1).join(' ');
-                const encrypted = xorEncryptDecrypt(plainText, key);
-                if (hexMode) {
-                    appendOutput(`ENCRYPTED (HEX): ${hexEncode(encrypted)}`, 'success');
-                } else {
-                    appendOutput(`ENCRYPTED: ${encrypted}`, 'success');
-                }
-                break;
-
-            case 'decrypt':
-                if (parts.length < 2) {
-                    appendOutput('ERROR: Usage: decrypt [text]', 'error');
-                    return;
-                }
-                const cipherText = parts.slice(1).join(' ');
-                const decrypted = xorEncryptDecrypt(cipherText, key);
-                if (hexMode) {
-                    appendOutput(`DECRYPTED (HEX): ${hexEncode(decrypted)}`, 'success');
-                } else {
-                    appendOutput(`DECRYPTED: ${decrypted}`, 'success');
-                }
-                break;
-
-            case 'clear':
-                output.innerHTML = '';
-                break;
-
-            case 'echo':
-                if (parts.length < 2) {
-                    appendOutput('ERROR: Usage: echo [text]', 'error');
-                    return;
-                }
-                appendOutput(parts.slice(1).join(' '), 'success');
-                break;
-
-            case 'status':
-                appendOutput('=== STATUS ===');
-                appendOutput(`XOR KEY: ${key}`);
-                appendOutput(`HEX MODE: ${hexMode ? 'ON' : 'OFF'}`);
-                appendOutput(`MEMORY: 64,000 BYTES`);
-                appendOutput(`FIRMWARE: HYBRID`);
-                break;
-
-            default:
-                // Пытаемся расшифровать как XOR
-                try {
-                    const result = xorEncryptDecrypt(trimmed, key);
-                    if (hexMode) {
-                        appendOutput(`RESULT (HEX): ${hexEncode(result)}`, 'success');
-                    } else {
-                        appendOutput(`RESULT: ${result}`, 'success');
-                    }
-                } catch (e) {
-                    appendOutput(`ERROR: Unknown command: ${trimmed}`, 'error');
-                }
-        }
-    }
-
-    function executeCommand() {
-        const cmd = cmdInput.value;
-        if (cmd.trim() !== '') {
-            processCommand(cmd);
-            history.push(cmd);
-            historyIndex = history.length;
-            cmdInput.value = '';
-        }
-        cmdInput.focus();
-    }
-
-    executeBtn.addEventListener('click', executeCommand);
-    cmdInput.addEventListener('keydown', (e) => {
+    // ENTER key support
+    document.getElementById('keyInput').addEventListener('keypress', function (e) {
         if (e.key === 'Enter') {
-            executeCommand();
-        } else if (e.key === 'ArrowUp') {
-            e.preventDefault();
-            if (historyIndex > 0) {
-                historyIndex--;
-                cmdInput.value = history[historyIndex];
-            }
-        } else if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            if (historyIndex < history.length - 1) {
-                historyIndex++;
-                cmdInput.value = history[historyIndex];
-            } else {
-                historyIndex = history.length;
-                cmdInput.value = '';
-            }
+            document.getElementById('decryptBtn').click();
         }
     });
 
-    document.addEventListener('click', () => cmdInput.focus());
-    updateStatus();
+    document.getElementById('hexInput').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter') {
+            document.getElementById('hexBtn').click();
+        }
+    });
 </script>
 </body>
 </html>
