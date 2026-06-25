@@ -185,6 +185,7 @@ TAPE DRIVE ................ OK
         }).join(' ');
     }
 
+    // === НОВАЯ ФУНКЦИЯ ДЛЯ ДЕКОДИРОВАНИЯ HEX ===
     function hexDecode(hexStr) {
         const bytes = hexStr.trim().split(/\s+/);
         let result = '';
@@ -257,8 +258,9 @@ TAPE DRIVE ................ OK
                         hexMode = false;
                         appendOutput('HEX mode: OFF (output as raw characters)', 'success');
                     } else {
-                        // Попытка декодировать HEX
-                        const decoded = hexDecode(parts[1]);
+                        // Это часть для декодирования: например, "hex A1 B2 C3"
+                        const hexStr = parts.slice(1).join(' ');
+                        const decoded = hexDecode(hexStr);
                         if (decoded === null) {
                             appendOutput('ERROR: Invalid HEX format. Use: A1 B2 C3 ...', 'error');
                         } else {
@@ -266,13 +268,28 @@ TAPE DRIVE ................ OK
                         }
                     }
                 } else {
-                    // несколько байт
-                    const hexStr = parts.slice(1).join(' ');
-                    const decoded = hexDecode(hexStr);
-                    if (decoded === null) {
-                        appendOutput('ERROR: Invalid HEX format. Use: A1 B2 C3 ...', 'error');
+                    // Здесь ветка для "hex decode ..."
+                    if (parts[1] === 'decode') {
+                        const hexStr = parts.slice(2).join(' ');
+                        if (!hexStr) {
+                            appendOutput('ERROR: Usage: hex decode [bytes]', 'error');
+                            return;
+                        }
+                        const decoded = hexDecode(hexStr);
+                        if (decoded === null) {
+                            appendOutput('ERROR: Invalid HEX format. Use: A1 B2 C3 ...', 'error');
+                        } else {
+                            appendOutput(`DECODED: ${decoded}`, 'success');
+                        }
                     } else {
-                        appendOutput(`DECODED: ${decoded}`, 'success');
+                        // Если что-то другое — пытаемся просто декодировать
+                        const hexStr = parts.slice(1).join(' ');
+                        const decoded = hexDecode(hexStr);
+                        if (decoded === null) {
+                            appendOutput('ERROR: Invalid HEX format. Use: A1 B2 C3 ...', 'error');
+                        } else {
+                            appendOutput(`DECODED: ${decoded}`, 'success');
+                        }
                     }
                 }
                 break;
