@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>IBM 5100 — PALM MICROCODE MONITOR</title>
-        <style>
+    <style>
         * {
             margin: 0;
             padding: 0;
@@ -11,154 +11,195 @@
         }
 
         body {
-            background: #0a0c12;
-            font-family: 'Courier New', monospace;
+            background: #0a0a0a;
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
+            font-family: 'Courier New', 'VT323', monospace;
             padding: 20px;
         }
 
-        .ibm-container {
+        .terminal {
+            background: #0f2b0f;
+            border: 4px solid #2a4a2a;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(0, 255, 0, 0.2), inset 0 0 10px rgba(0, 255, 0, 0.1);
             max-width: 900px;
             width: 100%;
-            background: #0a0a0a;
-            border: 2px solid #2a4a6a;
-            border-radius: 12px;
-            padding: 20px 25px;
-            box-shadow: 0 0 20px rgba(0, 50, 80, 0.3);
+            padding: 20px;
+        }
+
+        .screen {
+            background: #0a1f0a;
+            color: #33ff33;
+            font-family: 'Courier New', 'VT323', monospace;
+            font-size: 16px;
+            line-height: 1.5;
+            padding: 20px;
+            border-radius: 4px;
+            text-shadow: 0 0 3px #33ff33;
+            box-shadow: inset 0 0 15px rgba(0, 255, 0, 0.1);
         }
 
         .header {
-            color: #6a8aaa;
-            font-size: 12px;
-            letter-spacing: 1px;
-            border-bottom: 1px solid #1a2a3a;
-            padding-bottom: 8px;
+            border-bottom: 1px solid #33ff33;
             margin-bottom: 15px;
+            padding-bottom: 10px;
+            font-weight: bold;
             white-space: pre-wrap;
-            line-height: 1.5;
+            font-size: 14px;
         }
 
         .output {
-            background: #0a0a0a;
-            color: #00cc66;
-            font-family: 'Courier New', monospace;
-            font-size: 14px;
-            min-height: 300px;
-            max-height: 500px;
-            overflow-y: auto;
-            padding: 10px 5px;
-            border: 1px solid #1a2a3a;
-            border-radius: 4px;
-            line-height: 1.6;
+            margin-bottom: 20px;
             white-space: pre-wrap;
-            word-break: break-word;
+            word-break: break-all;
+            min-height: 200px;
+            max-height: 400px;
+            overflow-y: auto;
         }
 
         .output .prompt {
-            color: #6a8aaa;
+            color: #33ff33;
         }
 
         .output .error {
-            color: #cc6666;
+            color: #ff6666;
         }
 
         .output .success {
-            color: #66cc99;
+            color: #66ff99;
         }
 
         .input-line {
             display: flex;
-            align-items: center;
-            margin-top: 12px;
-            border-top: 1px solid #1a2a3a;
-            padding-top: 12px;
-        }
-
-        .input-line span {
-            color: #6a8aaa;
-            margin-right: 8px;
-            font-size: 14px;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 10px;
+            border-top: 1px solid #33ff33;
+            padding-top: 15px;
         }
 
         .input-line input {
             flex: 1;
-            background: #0a0a0a;
-            border: none;
-            border-bottom: 1px solid #2a4a6a;
-            color: #00cc66;
+            background: #0a1f0a;
+            border: 1px solid #33ff33;
+            color: #33ff33;
             font-family: 'Courier New', monospace;
-            font-size: 14px;
-            padding: 6px 4px;
+            font-size: 16px;
+            padding: 8px 12px;
             outline: none;
         }
 
-        .input-line input:focus {
-            border-bottom-color: #6a9aba;
+        .input-line button {
+            background: #0a1f0a;
+            border: 1px solid #33ff33;
+            color: #33ff33;
+            font-family: 'Courier New', monospace;
+            font-size: 16px;
+            padding: 8px 16px;
+            cursor: pointer;
+            transition: all 0.2s;
         }
 
-        .footer {
-            margin-top: 15px;
-            font-size: 10px;
-            color: #4a6a8a;
-            text-align: right;
+        .input-line button:hover {
+            background: #33ff33;
+            color: #0a1f0a;
+            box-shadow: 0 0 8px #33ff33;
+        }
+
+        .status {
+            font-size: 12px;
+            margin-top: 10px;
+            color: #66ff66;
+            border-top: 1px solid #33ff33;
+            padding-top: 8px;
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+            background: #0a1f0a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #33ff33;
+            border-radius: 4px;
+        }
+
+        .mode-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .mode-buttons button {
+            background: #0a1f0a;
+            border: 1px solid #33ff33;
+            color: #33ff33;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            padding: 5px 12px;
+            cursor: pointer;
+        }
+
+        .mode-buttons button.active {
+            background: #33ff33;
+            color: #0a1f0a;
         }
     </style>
 </head>
 <body>
-<div class="ibm-container">
-    <div class="header">
+<div class="terminal">
+    <div class="screen">
+        <div class="header">
 IBM 5100 PERSONAL COMPUTER - MODEL 5100
 PALM MICROCODE MONITOR 1.0
 BASIC/APL HYBRID FIRMWARE © IBM 1975
-MEMORY SIZE: 64,000 BYTES
-TAPE: DC300
-TERMINAL: 16x64
-PHOSPHOR: P1 (GREEN)
+
+MEMORY SIZE: 64,000 BYTES    TAPE: DC300
+TERMINAL: 16x64   PHOSPHOR: P1 (GREEN)
+
 SELF TEST ................. OK
 ROM CHECK ................. OK
 TAPE DRIVE ................ OK
-    </div>
+        </div>
 
-    <div class="output" id="output">
-        <span class="prompt">> READY.</span>
-        <br>
-        <span class="prompt">> Type HELP for commands.</span>
-        <br>
-        <span class="prompt">> IBM 5100 ONLINE. XOR CRYPTO ENGINE ACTIVE.</span>
-        <br>
-        <span class="prompt">> CURRENT KEY: 42. Type HELP for commands.</span>
-        <br>
-        <span class="prompt">> TIP: Use "hex on" to see encrypted data as HEX.</span>
-        <br>
-        <span class="prompt">> TIP: Use "hex decode [bytes]" to decode HEX to text.</span>
-        <br>
-        <span class="prompt">> TIP: Use "reset key" to reset to 42.</span>
-        <br>
-        <span class="prompt">> MODE: APL | KEY: 42 (XOR) | FIRMWARE: HYBRID</span>
-        <br>
-    </div>
+        <div class="output" id="output">
+            <span class="prompt">> READY.</span><br>
+            <span class="prompt">> Type HELP for commands.</span><br>
+            <span class="prompt">> IBM 5100 ONLINE. XOR CRYPTO ENGINE ACTIVE.</span><br>
+            <span class="prompt">> CURRENT KEY: 42. Type HELP for commands.</span><br>
+            <span class="prompt">> TIP: Use "hex on" to see encrypted data as HEX.</span><br>
+            <span class="prompt">> TIP: Use "hex decode [bytes]" to decode HEX to text.</span><br>
+            <span class="prompt">> TIP: Use "reset key" to reset to 42.</span><br>
+            <span class="prompt">> MODE: APL | KEY: 42 (XOR) | FIRMWARE: HYBRID</span><br>
+        </div>
 
-    <div class="input-line">
-        <span>&gt;</span>
-        <input type="text" id="cmdInput" placeholder="введите команду..." autofocus>
-    </div>
+        <div class="input-line">
+            <input type="text" id="cmdInput" placeholder="> " autofocus>
+            <button id="executeBtn">ENTER</button>
+        </div>
 
-    <div class="footer">
-        ⏚ SESSION: ACTIVE • MEMORY: 64KB
+        <div class="status" id="status">
+            MODE: APL | KEY: 42 (XOR) | FIRMWARE: HYBRID
+        </div>
     </div>
 </div>
 
 <script>
     const output = document.getElementById('output');
     const cmdInput = document.getElementById('cmdInput');
+    const executeBtn = document.getElementById('executeBtn');
+    const statusSpan = document.getElementById('status');
 
     let key = 42;
     let hexMode = false;
     let history = [];
     let historyIndex = -1;
+
+    function updateStatus() {
+        statusSpan.innerText = `MODE: APL | KEY: ${key} (XOR) | FIRMWARE: HYBRID`;
+    }
 
     function appendOutput(text, className = '') {
         const line = document.createElement('div');
@@ -234,12 +275,14 @@ TAPE DRIVE ................ OK
                     return;
                 }
                 key = newKey;
+                updateStatus();
                 appendOutput(`KEY set to ${key}`, 'success');
                 break;
 
             case 'reset':
                 if (parts.length === 2 && parts[1] === 'key') {
                     key = 42;
+                    updateStatus();
                     appendOutput('KEY reset to 42', 'success');
                 } else {
                     appendOutput('ERROR: Unknown command. Try "reset key"', 'error');
@@ -249,46 +292,31 @@ TAPE DRIVE ................ OK
             case 'hex':
                 if (parts.length === 1) {
                     appendOutput(`HEX mode: ${hexMode ? 'ON' : 'OFF'}`, 'success');
-                } else if (parts.length === 2) {
-                    if (parts[1] === 'on') {
-                        hexMode = true;
-                        appendOutput('HEX mode: ON (output as hexadecimal)', 'success');
-                    } else if (parts[1] === 'off') {
-                        hexMode = false;
-                        appendOutput('HEX mode: OFF (output as raw characters)', 'success');
+                } else if (parts.length === 2 && parts[1] === 'on') {
+                    hexMode = true;
+                    appendOutput('HEX mode: ON (output as hexadecimal)', 'success');
+                } else if (parts.length === 2 && parts[1] === 'off') {
+                    hexMode = false;
+                    appendOutput('HEX mode: OFF (output as raw characters)', 'success');
+                } else if (parts[1] === 'decode') {
+                    const hexStr = parts.slice(2).join(' ');
+                    if (!hexStr) {
+                        appendOutput('ERROR: Usage: hex decode [bytes]', 'error');
+                        return;
+                    }
+                    const decoded = hexDecode(hexStr);
+                    if (decoded === null) {
+                        appendOutput('ERROR: Invalid HEX format. Use: A1 B2 C3 ...', 'error');
                     } else {
-                        // Пытаемся декодировать HEX: hex A1 B2 C3
-                        const hexStr = parts.slice(1).join(' ');
-                        const decoded = hexDecode(hexStr);
-                        if (decoded === null) {
-                            appendOutput('ERROR: Invalid HEX format. Use: A1 B2 C3 ...', 'error');
-                        } else {
-                            appendOutput(`DECODED: ${decoded}`, 'success');
-                        }
+                        appendOutput(`DECODED: ${decoded}`, 'success');
                     }
                 } else {
-                    // hex decode ...
-                    if (parts[1] === 'decode') {
-                        const hexStr = parts.slice(2).join(' ');
-                        if (!hexStr) {
-                            appendOutput('ERROR: Usage: hex decode [bytes]', 'error');
-                            return;
-                        }
-                        const decoded = hexDecode(hexStr);
-                        if (decoded === null) {
-                            appendOutput('ERROR: Invalid HEX format. Use: A1 B2 C3 ...', 'error');
-                        } else {
-                            appendOutput(`DECODED: ${decoded}`, 'success');
-                        }
+                    const hexStr = parts.slice(1).join(' ');
+                    const decoded = hexDecode(hexStr);
+                    if (decoded === null) {
+                        appendOutput('ERROR: Invalid HEX format. Use: A1 B2 C3 ...', 'error');
                     } else {
-                        // Если просто ввели байты без decode
-                        const hexStr = parts.slice(1).join(' ');
-                        const decoded = hexDecode(hexStr);
-                        if (decoded === null) {
-                            appendOutput('ERROR: Invalid HEX format. Use: A1 B2 C3 ...', 'error');
-                        } else {
-                            appendOutput(`DECODED: ${decoded}`, 'success');
-                        }
+                        appendOutput(`DECODED: ${decoded}`, 'success');
                     }
                 }
                 break;
@@ -334,7 +362,7 @@ TAPE DRIVE ................ OK
                 break;
 
             case 'status':
-                appendOutput(`=== STATUS ===`);
+                appendOutput('=== STATUS ===');
                 appendOutput(`XOR KEY: ${key}`);
                 appendOutput(`HEX MODE: ${hexMode ? 'ON' : 'OFF'}`);
                 appendOutput(`MEMORY: 64,000 BYTES`);
@@ -356,13 +384,21 @@ TAPE DRIVE ................ OK
         }
     }
 
-    cmdInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') {
-            const cmd = cmdInput.value;
+    function executeCommand() {
+        const cmd = cmdInput.value;
+        if (cmd.trim() !== '') {
             processCommand(cmd);
-            cmdInput.value = '';
             history.push(cmd);
             historyIndex = history.length;
+            cmdInput.value = '';
+        }
+        cmdInput.focus();
+    }
+
+    executeBtn.addEventListener('click', executeCommand);
+    cmdInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            executeCommand();
         } else if (e.key === 'ArrowUp') {
             e.preventDefault();
             if (historyIndex > 0) {
@@ -381,8 +417,8 @@ TAPE DRIVE ................ OK
         }
     });
 
-    // Фокус на поле ввода при клике на страницу
     document.addEventListener('click', () => cmdInput.focus());
+    updateStatus();
 </script>
 </body>
 </html>
