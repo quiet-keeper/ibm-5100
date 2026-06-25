@@ -174,7 +174,7 @@ TAPE DRIVE ................ OK
 
 <script>
     // ==============================================
-    //  IBN 5100 TERMINAL - С HEX-РЕЖИМОМ И RESET KEY
+    //  IBM 5100 TERMINAL - С HEX-РЕЖИМОМ И RESET KEY
     //  EL PSY KONGROO
     // ==============================================
     
@@ -212,7 +212,7 @@ TAPE DRIVE ................ OK
         return hex.trim();
     }
 
-    // === НОВАЯ ФУНКЦИЯ: РАСШИФРОВКА HEX СТРОКИ ===
+    // === РАСШИФРОВКА HEX СТРОКИ ===
     function fromHexString(hexStr) {
         const bytes = hexStr.trim().split(/\s+/);
         let result = "";
@@ -221,10 +221,30 @@ TAPE DRIVE ................ OK
             if (!isNaN(code) && code >= 0 && code <= 255) {
                 result += String.fromCharCode(code);
             } else {
-                return null; // невалидный HEX
+                return null;
             }
         }
         return result;
+    }
+
+    // === НОВАЯ ФУНКЦИЯ: HEXIFY — чинит «странные» HEX-группы ===
+    function hexify(hexStr) {
+        const parts = hexStr.trim().split(/\s+/);
+        let fixed = "";
+        for (let part of parts) {
+            let num = parseInt(part, 16);
+            if (!isNaN(num) && num >= 0 && num <= 65535) {
+                let hexPart = num.toString(16).toUpperCase();
+                // Если длина нечётная — добавим ведущий ноль
+                if (hexPart.length % 2 !== 0) {
+                    hexPart = "0" + hexPart;
+                }
+                fixed += hexPart + " ";
+            } else {
+                return null; // невалидный блок
+            }
+        }
+        return fixed.trim();
     }
 
     function extractQuotedString(input) {
@@ -295,12 +315,13 @@ TAPE DRIVE ................ OK
 
         addOutput(trimmed, true);
 
-        // HELP (обновлён)
+        // HELP
         if (trimmed.toLowerCase() === "help") {
             addOutput("Available commands:");
             addOutput("  mode apl / mode basic      - Switch language mode");
             addOutput("  crypt 'text' or \"text\"    - Encrypt with XOR key");
-            addOutput("  crypt hex <HEX>            - Decrypt HEX string");
+            addOutput("  crypt hex <HEX>            - Decrypt HEX string (e.g. 48 65 6C 6C 6F)");
+            addOutput("  hexify <HEX>               - Fix invalid HEX groups (e.g. 409 41E 41A)");
             addOutput("  key <number>               - Change XOR key (0-255)");
             addOutput("  reset key                  - Reset XOR key to default (42)");
             addOutput("  reset key to <N>           - Reset XOR key to N (0-255)");
@@ -312,9 +333,23 @@ TAPE DRIVE ................ OK
             addOutput("Examples:");
             addOutput("  crypt 'hello'");
             addOutput("  crypt hex \"48 65 6C 6C 6F\"");
+            addOutput("  hexify 409 41E 41A 46D 412");
             addOutput("  hex on");
             addOutput("  reset key");
-            addOutput("  reset key to 100");
+            return;
+        }
+
+        // HEXIFY — чиним странные группы
+        if (trimmed.toLowerCase().startsWith("hexify ")) {
+            const rest = trimmed.substring(7).trim();
+            const fixed = hexify(rest);
+            if (fixed !== null) {
+                addOutput(`FIXED HEX: ${fixed}`);
+                addOutput(`Total bytes: ${fixed.split(/\s+/).length}`);
+                addOutput(`Try: crypt hex "${fixed}"`);
+            } else {
+                addOutput("ERROR: Invalid HEX groups. Use numbers like: 409 41E 41A 46D 412");
+            }
             return;
         }
 
@@ -404,37 +439,53 @@ TAPE DRIVE ................ OK
             return;
         }
 
-        // === НОВАЯ КОМАНДА: CRYPT hex <HEX> ===
+        // CRYPT hex
         if (trimmed.toLowerCase().startsWith("crypt hex")) {
             let rest = trimmed.substring(9).trim();
             let hexString = extractQuotedString(rest);
             if (!hexString) {
                 hexString = rest;
             }
+            // Сначала пробуем починить через hexify
+            let fixedHex = hexify(hexString);
+            if (fixedHex !== null) {
+                hexString = fixedHex;
+            }
             let decrypted = fromHexString(hexString);
             if (decrypted !== null) {
                 let result = xorCrypt(decrypted, XOR_KEY);
-                addOutput(result);
+                if (hexMode) {
+                    addOutput(`[HEX] ${toHexString(result)}`);
+                } else {
+                    addOutput(result);
+                }
             } else {
                 addOutput("ERROR: Invalid HEX string. Use format: crypt hex \"48 65 6C 6C 6F\"");
             }
             return;
         }
 
-        // CRYPT command
+        // CRYPT
         if (trimmed.toLowerCase().startsWith("crypt ")) {
             let text = extractQuotedString(trimmed);
             if (text !== null) {
                 handleCrypt(text);
             } else {
                 let possibleHex = trimmed.substring(6).trim();
-                let hexDecoded = fromHexString(possibleHex);
-                if (hexDecoded !== null && possibleHex.length > 3) {
-                    let result = xorCrypt(hexDecoded, XOR_KEY);
-                    addOutput(result);
-                } else {
-                    addOutput("SYNTAX ERROR: Use crypt 'text' or crypt hex \"HEX\"");
+                let fixedHex = hexify(possibleHex);
+                if (fixedHex !== null) {
+                    let hexDecoded = fromHexString(fixedHex);
+                    if (hexDecoded !== null) {
+                        let result = xorCrypt(hexDecoded, XOR_KEY);
+                        if (hexMode) {
+                            addOutput(`[HEX] ${toHexString(result)}`);
+                        } else {
+                            addOutput(result);
+                        }
+                        return;
+                    }
                 }
+                addOutput("SYNTAX ERROR: Use crypt 'text' or crypt hex \"HEX\"");
             }
             return;
         }
@@ -510,6 +561,7 @@ TAPE DRIVE ................ OK
     addOutput(`CURRENT KEY: ${XOR_KEY}. Type HELP for commands.`);
     addOutput(`TIP: Use "hex on" to see encrypted data as HEX.`);
     addOutput(`TIP: Use "reset key" to reset to ${DEFAULT_KEY}.`);
+    addOutput(`TIP: Use "hexify" to fix invalid HEX groups (e.g. 409 41E 41A).`);
     commandInput.focus();
 </script>
 </body>
